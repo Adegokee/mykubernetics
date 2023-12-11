@@ -1,0 +1,379 @@
+ -----------module 1-------------
+ https://docs.google.com/document/d/1XpXl9Xm0_4sUtf3gKUA0TFp4qwCvXnu8YO9_0B4OUZo/edit#heading=h.6fxiynwr0aa5
+ --Kubernetes introduction ---
+ kubectl get node
+ kubectl get pods
+ docker ps | grep nginx
+
+ --PODS--
+ kubectl explain pod
+ kubectl run mywebserver --image=nginx
+ kubectl exec -it mywebserver -- ls -l /
+ kubectl exec -it mywebserve -- bash
+ apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.14.2
+kubectl apply f pods.yaml
+kubectl proxy --port 8080
+kubectl api-resources
+kubectl describe pod nginx
+ kubectl explain pod.spec.container
+ kubectl explain pod.spec
+
+---multiple pods----
+apiVersion: v1
+kind: Pod
+metadata:
+  name: adegokenginx
+spec:
+  containers:
+   - name: tundecontainer1
+     image: nginx
+   - name: tundecontainer2
+     image: busybox
+     command:
+      - sleep
+      - "3600"
+
+kubectl apply -f miltipods.yaml
+kubectl exec -it nginx -- bash
+apt-get update && apt-get install net-tools
+netstat -ntlp
+ifconfig
+kubectl exec -it adegokenginx -c tundecontainer2 sh
+netstat ntlp
+wget 127.0.0.1:80
+cat index.html
+ifconfig
+
+
+----etcd-----
+kubectl exec -it mywebserve -- bash
+ls -l etc
+
+
+---DOCKER CMD AND ENTRY POINT why they can be overright----
+create a Dockerfile
+FROM busybox
+CMD ['sh']
+docker build -t base01 .
+docker run -dt --name base01 base01
+docker ps -a
+docker run -dt --name base02 base01 ping -c 10 google.com
+docker ps -a
+
+FROM busybox
+ENTRYPOINT [ "/bin/ping" ]
+docker build -t tunde .
+docker container run -dt --name  tunde tunde
+docker container run -dt --name  tunde1 tunde -c 20 google.com
+docker ps -a
+
+
+---understanding command and args in docker  kubernetes---
+docker run --name busybox busybox
+docker ps -a
+create command.yaml to run a pod using busybox image
+kubectl apply -f command.yaml
+docker exec -it busybox1 sh
+docker ps -a
+docker run -d --name busybox busybox sleep 3600
+docker exec -it busybox1 sh
+edit the command.yaml to accept command and args
+and apply
+
+
+----EXPOSE PORT ON POD----
+docker run -d --name nginx nginx
+docker inspect nginx
+docker run -d nginx -p 80:80 nginx
+docker run -d --name nginx2 -p 80:80 nginx
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.14.2
+    ports:
+    - containerPort: 80
+kubectl apply
+kubectl explain pod.spec.container.ports
+
+---cli pod creation ---
+ kubectl run nginx --image=nginx
+kubectl run tunde3 --image=nginx --port=80
+kubectl run tunde3 --image=nginx --port=80 --dry-run=client -o yaml
+
+
+
+ ----------- module 2 -------------
+ https://docs.google.com/document/d/1Uoebi-g-Arua9myZCzK3Kx-rpJsPZ9NK9oyWG8MgdxY/edit#heading=h.6fxiynwr0aa5
+ ----labels and selectors----
+ kubectl run pod-1 --image=nginx
+ kubectl run pod-2 --image=nginx
+ kubectl run pod-3 --image=nginx
+ kubectl label pod pod-1 env=dev
+ kubectl label pod pod-2 env=stage
+ kubectl label pod pod-3 env=prod
+ kubectl get pod -l env=dev
+ kubectl get pod -l env!=dev
+ kubectl label --help
+ kubectl get pods --show-labels
+ kubectl label pods pod-1 env-
+kubectl get pods --show-labels
+kubectl run nginx --image=nginx --dry-run=client -o yaml
+kubectl run nginx --image=nginx --dry-run=client -o yaml > label-pod.yaml
+kubectl apply -f label-pod.yaml
+kubectl label pods --all status=running
+kubectl get pods --show-labels
+
+----replicaset----
+create a file called repica.yaml
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: myreplicas
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        tier: frontend
+    spec:
+      containers:
+      - name: php-redis
+        image: gcr.io/google_samples/gb-frontend:v3
+kubectl apply -f replica.yaml
+kubectl get pods
+kubectl get replicaset
+kubectl get rs
+kubectl delete pod myreplicas-4wdm6
+kubectl get pods
+kubectl get pods --show-labels
+
+
+-----deployments-----
+create a file called deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+kubectl apply -f dployment.yaml
+kubectl get deployment
+kubectl get replicaset
+kubectl get pod
+for roll back changes change the version of nginx image 
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.17.3
+kubectl apply -f deployment.yaml
+kubectl get rs
+kubectl get pods
+kubectl describe nginx-deployment
+kubectl rollout history deployment nginx-deployment
+kubectl rollout history deployment nginx-deployment --revision 1
+kubectl rollout history deployment nginx-deployment --revision 2
+kubectl rollout undo deployment nginx-deployment --to-revision=1
+kubectl get rs
+kubectl describe deployment nginx-deployment
+kubectl rollout history deployment nginx-deployment
+
+----create deployment via CLI-----
+kubectl create deployment my-deployment --image=nginx
+kubectl create deployment my-deployment --image=nginx --dry-run=client -o yaml
+kubectl create deployment my-deployment --image=nginx --dry-run=client -o yaml --replicas=3
+ubectl create deployment --help
+
+---important pointer for deployment ---
+kubectl create deployment tunde --image=nginx2
+kubectl set image deployment nginx nginx=nginx:latest
+kubectl get pod
+kubectl rollout history deployment tunde
+kubectl set image deployment tunde nginx=nginx:1.91 --record
+kubectl rollout history deployment tunde
+kubectl get deployment tunde  -o yaml
+kubectl scale deployment tunde --replicas=5
+cheat sheet for kubectl command documentation
+
+----creating deployment for cli----
+kubectl create deployment nginx-deploy --image=nginx
+kubectl create deployment nginx-deploy --image=nginx --dry-run=client -o yaml
+kubectl create deployment --help
+
+---daemonset---
+create a file called daemonset.yaml
+metadata:
+  name: fluentd-elasticsearch
+spec:
+  selector:
+    matchLabels:
+      name: mydemon
+  template:
+    metadata:
+      labels:
+        name: mydemon
+    spec: 
+      containers:
+        - name: mydeamonset
+          image: nginx
+kubectl apply daemonset.yaml
+kubectl get pods
+kubectl get daemonset
+kubectl describe daemonset
+kubectl get pods -o wide
+
+
+
+---nodeSelector----
+kubectl get node
+kubetl describe node nodename
+kubectl label node myk8node-xcx1e  disk=ppd
+create a file and call it nodeselector.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: selectornode
+spec:
+  containers:
+  - name: mynodeselector
+    image: adegokebabatunde/ourdjangoapp
+  nodeSelector:
+    disk: ssd
+kubectl apply -f nodeselector.yaml
+kubectl get pod -o wide
+
+
+
+---Node Affinity ----
+creat a file called nodeaffinity
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: disk
+            operator: In
+            values:
+            - ssd            
+  containers:
+  - name: nginx
+    image: nginx
+
+kubectl apply -f nodeaffrinity.yaml
+kubectl get pod -o wide
+kubectl describe node nameofnode
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  affinity:
+    nodeAffinity:
+        preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 1
+          preference:
+            matchExpressions:
+            - key: disk
+              operator: In
+              values:
+              - ssd            
+  containers:
+  - name: myafrinity
+    image: nginx
+
+kubectl apply -f nodeaffrinity.yaml
+kubectl get pod -o wide
+kubectl describe node nameofnode
+    
+
+
+-----Request and Limit-----
+create a file called limits.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myfirstpod2
+spec:
+  containers:
+  - name: ourdeploy2
+    image: adegokebabatunde/ourdjangoapp
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "0.5"
+      limits:
+        memory: "128Mi"
+        cpu: '1'
+kubectl apply -f limits.yaml
+kubectl get pod -o wide
+kubectl describe node nameofnode
+
+
+
+---Taint and Tolerant----
+kubectl get node
+kubectl describe node tundenode-xcpyj
+kubectl taint nodes tundenode-xcpyj key=value:NoSchedule
+kubectl describe node tundenode-xcpyj
+kubectl create deployment nginx --image=nginx
+kubectl get pods
+kubectl get pods -o wide
+create deployment file called toleration.yaml
+kubectl apply -f toleration.yaml
+kubectl get pods -o wide 
+kubectl describe node nodename
+kubectl taint nodes tundenode-xcpyj key=value:NoSchedule-
+kubectl taint nodes tundenode-xcpyj key=value:NoExecute
+
+
+
+
+
+

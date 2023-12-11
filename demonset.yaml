@@ -1,0 +1,16 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluentd-elasticsearch
+spec:
+  selector:
+    matchLabels:
+      name: mydemon
+  template:
+    metadata:
+      labels:
+        name: mydemon
+    spec: 
+      containers:
+        - name: mydeamonset
+          image: nginx

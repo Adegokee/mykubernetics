@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: selectornode
+spec:
+  containers:
+  - name: mynodeselector
+    image: adegokebabatunde/ourdjangoapp
+  nodeSelector:
+    disk: ssd
