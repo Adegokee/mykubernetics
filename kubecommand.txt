@@ -263,8 +263,6 @@ kubectl get daemonset
 kubectl describe daemonset
 kubectl get pods -o wide
 
-
-
 ---nodeSelector----
 kubectl get node
 kubetl describe node nodename
@@ -282,7 +280,6 @@ spec:
     disk: ssd
 kubectl apply -f nodeselector.yaml
 kubectl get pod -o wide
-
 
 
 ---Node Affinity ----
@@ -371,6 +368,139 @@ kubectl get pods -o wide
 kubectl describe node nodename
 kubectl taint nodes tundenode-xcpyj key=value:NoSchedule-
 kubectl taint nodes tundenode-xcpyj key=value:NoExecute
+
+
+
+-------------module 3 ------------------
+----------SERVICES-----------
+kubectl run backend-pod-1 --image=nginx
+kubectl run backend-pod-2 --image=nginx
+kubectl run frontend-pod --image=ubuntu --command sleep 3600
+kubectl get pod -o wide
+kubectl exec -it frontend-pod -- bash
+apt update
+apt install -y curl
+curl 10.244.0.69
+create a service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+spec:
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 80
+kubectl get service
+kubectl describe service my-service
+copy the service ip address -10.245.18.188
+kubectl exec -it frontend-pod -- bash
+curl 10.245.18.188:8080
+create endpoint.yaml
+link one of the backend ip you created to the endpoint
+kubectl apply -f endpoint.yaml
+kubectl describe service my-service
+kubectl exec -it frontend-pod -- bash
+curl 10.245.18.188:8080
+
+
+
+create demo-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+spec:
+  selector:
+    app: nginx
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+kubectl apply -f demo-deployment.yaml
+kubectl get pod --show-labels
+kubectl describe service my-service
+kubectl scale deployment/nginx-deployment --replicas=10 
+kubectl get endpoints
+kubectl describe endpoints my-service
+
+
+kubectl run manual-pod --image=nginx
+kubectl label pods manual-pod app=nginx
+kubectl get pods --show-labels
+kubectl describe service my-service
+
+
+
+----NodePort----
+kubectl run nodeport-pod --labels="type=publicpod" --image=nginx
+create a nodepod.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+spec:
+  selector:
+    type: publicpod
+  type: NodePort
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+kubectl apply -f nodepod.yaml
+kubectl get svc
+kubectl get nodes -o wide
+copy the node external ip:port of the service and paste to the browser to display the nginx template
+
+----LoadBalancer-------
+kubectl run lb-pod --labels= --labels="type=loadbalanced" --image=nginx
+kubectl get pod -o wide
+create a file called elb-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service3
+spec:
+  type: LoadBalancer
+  selector:
+    type: loadbalanced
+  ports:
+    - port: 80
+      protocol: TCP
+kubectl apply -f elb-service.yaml
+go to networking on digital ocean to check for an it
+
+
+
+
+
+
+
+
+
+
 
 
 
