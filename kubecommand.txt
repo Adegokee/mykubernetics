@@ -227,7 +227,7 @@ ubectl create deployment --help
 
 ---important pointer for deployment ---
 kubectl create deployment tunde --image=nginx2
-kubectl set image deployment nginx nginx=nginx:latest
+kubectl set image deployment tunde nginx=nginx:latest
 kubectl get pod
 kubectl rollout history deployment tunde
 kubectl set image deployment tunde nginx=nginx:1.91 --record
